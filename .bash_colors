@@ -1,0 +1,606 @@
+#!/usr/bin/env bash
+# The shebang is redundant since this is being sourced by .bashrc. it is only
+# here to enable syntax highlighting in nano. It may be removed.
+
+# Default color palette
+color_palette=""
+
+# ---------------------------------------------------------
+#  Unified Terminal Color Palette File
+#   ~/.bash_colors
+#  Themes selectable via:  selected_palette="dracula"
+# ---------------------------------------------------------
+
+# ---------------------------------------------------------
+# Function: select-color-palette
+# ---------------------------------------------------------
+# List available terminal color palettes defined in .bash_colors
+# and allow selection to update ~/.bashrc automatically.
+#
+# Usage:
+#   select-color-palette         # Show menu and select palette interactively
+#   select-color-palette <name>  # Set palette directly by name (bypass menu)
+#
+# Effects:
+#   - Updates the line `color_palette="<palette_name>"` in ~/.bashrc
+#   - Sources .bashrc to apply new colors
+#   - Updates PS1 immediately if the prompt uses the color_palette variable
+#
+# Notes:
+#   - Command completion is active for this function. So, you can press TAB
+#     to see a list of palette options.
+#
+# ---------------------------------------------------------
+select-color-palette() {
+    local colors_file="${BASH_SOURCE[0]}"  # assumes called from .bash_colors
+
+    # Gather palettes dynamically by parsing declare -A lines
+    local palettes=()
+    while IFS= read -r line; do
+        # Match lines like: declare -A palette_name=(
+        if [[ "$line" =~ ^declare[[:space:]]+-A[[:space:]]+([a-zA-Z0-9_]+)= ]]; then
+            palettes+=("${BASH_REMATCH[1]}")
+        fi
+    done < "$colors_file"
+
+    if (( ${#palettes[@]} == 0 )); then
+        echo "No palettes found in $colors_file"
+        return 1
+    fi
+
+    local selected_palette="$1"
+
+    # If no argument provided, prompt user
+    if [[ -z "$selected_palette" ]]; then
+        echo "Available color palettes:"
+        for i in "${!palettes[@]}"; do
+            printf "  %2d) %s\n" "$((i+1))" "${palettes[$i]}"
+        done
+
+        # Prompt user for selection
+        local choice
+        read -rp "Select a palette by number or name: " choice
+
+        # Normalize choice to palette name
+        if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#palettes[@]} )); then
+            selected_palette="${palettes[$((choice-1))]}"
+        elif [[ " ${palettes[*]} " =~ " $choice " ]]; then
+            selected_palette="$choice"
+        else
+            echo "Invalid selection: $choice"
+            return 1
+        fi
+    else
+        # Argument provided: validate it
+        if [[ ! " ${palettes[*]} " =~ " $selected_palette " ]]; then
+            echo "Invalid palette name: $selected_palette"
+            return 1
+        fi
+    fi
+
+    # Update .bashrc robustly
+    local bashrc="$HOME/.bash_colors"
+    if grep -q '^color_palette=' "$bashrc"; then
+        sed -i.bak "s/^color_palette=.*/color_palette=\"$selected_palette\"/" "$bashrc"
+    else
+        echo "color_palette=\"$selected_palette\"" >> "$bashrc"
+    fi
+
+    source .bashrc # reload init files
+}
+
+# ---------------------------------------------------------
+# Function: set-terminal-colors
+# ---------------------------------------------------------
+# Usage:
+#   set--terminal-colors <name>  # Set palette directly by name (bypass menu)
+#
+# Effects:
+#   - Updates the line `color_palette="<palette_name>"` in ~/.bashrc
+#   - Updates PS1 immediately if the prompt uses the color_palette variable
+#
+# Notes:
+#   - Command completion is active for this function. So, you can press TAB
+#     to see a list of palette options.
+#
+# ---------------------------------------------------------
+set-terminal-colors() {
+    local -n pal="$1"
+    for i in {0..15}; do
+        key="${_term_keys[$i]}"
+        printf '\e]4;%s;rgb:%s\a' "$i" "${pal[$key]}"
+    done
+
+    local bashrc="$HOME/.bash_colors"
+    if grep -q '^color_palette=' "$bashrc"; then
+        sed -i.bak "s/^color_palette=.*/color_palette=\"$pal\"/" "$bashrc"
+    else
+        echo "color_palette=\"$pal\"" >> "$bashrc"
+    fi
+}
+
+# Key ordering for OSC4 writeout
+declare -a _term_keys=(
+    "_term_black"
+    "_term_red"
+    "_term_green"
+    "_term_yellow"
+    "_term_blue"
+    "_term_magenta"
+    "_term_cyan"
+    "_term_white"
+    "_term_bright_black"
+    "_term_bright_red"
+    "_term_bright_green"
+    "_term_bright_yellow"
+    "_term_bright_blue"
+    "_term_bright_magenta"
+    "_term_bright_cyan"
+    "_term_bright_white"
+)
+
+# ---------------------------------------------------------
+# PALETTES BEGIN
+# ---------------------------------------------------------
+
+# -------------------------------------
+# Defaults
+# -------------------------------------
+declare -A defaults=(
+    [_term_black]="00/00/00"
+    [_term_red]="AA/00/00"
+    [_term_green]="00/AA/00"
+    [_term_yellow]="AA/AA/00"
+    [_term_blue]="00/00/AA"
+    [_term_magenta]="AA/00/AA"
+    [_term_cyan]="00/AA/AA"
+    [_term_white]="AA/AA/AA"
+    [_term_bright_black]="55/55/55"
+    [_term_bright_red]="FF/55/55"
+    [_term_bright_green]="55/FF/55"
+    [_term_bright_yellow]="FF/FF/55"
+    [_term_bright_blue]="55/55/FF"
+    [_term_bright_magenta]="FF/55/FF"
+    [_term_bright_cyan]="55/FF/FF"
+    [_term_bright_white]="FF/FF/FF"
+)
+
+# -------------------------------------
+# Solarized Dark
+# -------------------------------------
+declare -A solarized_dark=(
+    [_term_black]="07/36/42"
+    [_term_red]="dc/32/2f"
+    [_term_green]="85/99/00"
+    [_term_yellow]="b5/89/00"
+    [_term_blue]="26/8b/d2"
+    [_term_magenta]="d3/36/82"
+    [_term_cyan]="2a/a1/98"
+    [_term_white]="ee/e8/d5"
+    [_term_bright_black]="00/2b/36"
+    [_term_bright_red]="cb/4b/16"
+    [_term_bright_green]="58/6e/75"
+    [_term_bright_yellow]="65/7b/83"
+    [_term_bright_blue]="83/94/96"
+    [_term_bright_magenta]="6c/71/c4"
+    [_term_bright_cyan]="93/a1/a1"
+    [_term_bright_white]="fd/f6/e3"
+)
+
+# -------------------------------------
+# Solarized Light
+# -------------------------------------
+declare -A solarized_light=(
+    [_term_black]="ee/e8/d5"
+    [_term_red]="dc/32/2f"
+    [_term_green]="85/99/00"
+    [_term_yellow]="b5/89/00"
+    [_term_blue]="26/8b/d2"
+    [_term_magenta]="d3/36/82"
+    [_term_cyan]="2a/a1/98"
+    [_term_white]="00/2b/36"
+    [_term_bright_black]="fd/f6/e3"
+    [_term_bright_red]="cb/4b/16"
+    [_term_bright_green]="58/6e/75"
+    [_term_bright_yellow]="65/7b/83"
+    [_term_bright_blue]="83/94/96"
+    [_term_bright_magenta]="6c/71/c4"
+    [_term_bright_cyan]="93/a1/a1"
+    [_term_bright_white]="07/36/42"
+)
+
+# -------------------------------------
+# Dracula
+# -------------------------------------
+declare -A dracula=(
+    [_term_black]="28/2a/36"
+    [_term_red]="ff/55/55"
+    [_term_green]="50/fa/7b"
+    [_term_yellow]="f1/fa/8c"
+    [_term_blue]="bd/93/f9"
+    [_term_magenta]="ff/79/c6"
+    [_term_cyan]="8b/e9/fd"
+    [_term_white]="f8/f8/f2"
+    [_term_bright_black]="62/72/a4"
+    [_term_bright_red]="ff/6e/6e"
+    [_term_bright_green]="69/ff/94"
+    [_term_bright_yellow]="ff/ff/a5"
+    [_term_bright_blue]="d6/ac/f9"
+    [_term_bright_magenta]="ff/92/dd"
+    [_term_bright_cyan]="a4/f3/ff"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Nord
+# -------------------------------------
+declare -A nord=(
+    [_term_black]="2e/34/40"
+    [_term_red]="bf/61/6a"
+    [_term_green]="a3/be/8c"
+    [_term_yellow]="eb/cb/8b"
+    [_term_blue]="5e/81/ac"
+    [_term_magenta]="b4/8e/ad"
+    [_term_cyan]="88/c0/d0"
+    [_term_white]="e5/e9/f0"
+    [_term_bright_black]="4c/56/6a"
+    [_term_bright_red]="bf/61/6a"
+    [_term_bright_green]="a3/be/8c"
+    [_term_bright_yellow]="eb/cb/8b"
+    [_term_bright_blue]="81/a1/c1"
+    [_term_bright_magenta]="b4/8e/ad"
+    [_term_bright_cyan]="8f/bc/bd"
+    [_term_bright_white]="ec/ef/f4"
+)
+
+# -------------------------------------
+# One Dark
+# -------------------------------------
+declare -A one_dark=(
+    [_term_black]="28/2c/34"
+    [_term_red]="e0/6c/75"
+    [_term_green]="98/c3/79"
+    [_term_yellow]="e5/c0/7b"
+    [_term_blue]="61/af/ef"
+    [_term_magenta]="c6/78/dd"
+    [_term_cyan]="56/b6/c2"
+    [_term_white]="dc/dc/dd"
+    [_term_bright_black]="5c/63/70"
+    [_term_bright_red]="e5/73/73"
+    [_term_bright_green]="b4/e0/99"
+    [_term_bright_yellow]="f0/d9/99"
+    [_term_bright_blue]="79/c1/ff"
+    [_term_bright_magenta]="d8/9c/ef"
+    [_term_bright_cyan]="6b/cf/df"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Gruvbox Dark
+# -------------------------------------
+declare -A gruvbox_dark=(
+    [_term_black]="28/28/28"
+    [_term_red]="cc/24/1d"
+    [_term_green]="98/97/1a"
+    [_term_yellow]="d7/99/21"
+    [_term_blue]="45/85/88"
+    [_term_magenta]="b1/62/86"
+    [_term_cyan]="68/9d/6a"
+    [_term_white]="a8/99/84"
+    [_term_bright_black]="92/83/74"
+    [_term_bright_red]="fb/49/34"
+    [_term_bright_green]="b8/bb/26"
+    [_term_bright_yellow]="fa/bd/2f"
+    [_term_bright_blue]="83/a5/98"
+    [_term_bright_magenta]="d3/86/9b"
+    [_term_bright_cyan]="8e/c0/7c"
+    [_term_bright_white]="fb/f1/c7"
+)
+
+# -------------------------------------
+# Gruvbox Light
+# -------------------------------------
+declare -A gruvbox_light=(
+    [_term_black]="fb/f1/c7"
+    [_term_red]="cc/24/1d"
+    [_term_green]="98/97/1a"
+    [_term_yellow]="d7/99/21"
+    [_term_blue]="45/85/88"
+    [_term_magenta]="b1/62/86"
+    [_term_cyan]="68/9d/6a"
+    [_term_white]="28/28/28"
+    [_term_bright_black]="a8/99/84"
+    [_term_bright_red]="fb/49/34"
+    [_term_bright_green]="b8/bb/26"
+    [_term_bright_yellow]="fa/bd/2f"
+    [_term_bright_blue]="83/a5/98"
+    [_term_bright_magenta]="d3/86/9b"
+    [_term_bright_cyan]="8e/c0/7c"
+    [_term_bright_white]="92/83/74"
+)
+
+# -------------------------------------
+# Tokyo Night
+# -------------------------------------
+declare -A tokyo_night=(
+    [_term_black]="1a/1b/26"
+    [_term_red]="f7/77/77"
+    [_term_green]="9e/ce/6a"
+    [_term_yellow]="e0/af/68"
+    [_term_blue]="7a/a2/f7"
+    [_term_magenta]="bb/9a/f7"
+    [_term_cyan]="7d/cf/f4"
+    [_term_white]="a9/b1/d6"
+    [_term_bright_black]="44/4b/6a"
+    [_term_bright_red]="ff/9e/64"
+    [_term_bright_green]="b9/f2/89"
+    [_term_bright_yellow]="ff/e0/99"
+    [_term_bright_blue]="9a/bd/ff"
+    [_term_bright_magenta]="c8/b2/ff"
+    [_term_bright_cyan]="8a/e3/ff"
+    [_term_bright_white]="c0/ca/f5"
+)
+
+# -------------------------------------
+# Neon
+# -------------------------------------
+declare -A neon=(
+    [_term_black]="05/05/08"
+    [_term_red]="ff/00/6e"
+    [_term_green]="39/ff/14"
+    [_term_yellow]="ff/f8/00"
+    [_term_blue]="00/e5/ff"
+    [_term_magenta]="ff/00/f4"
+    [_term_cyan]="00/ff/bf"
+    [_term_white]="d0/d0/d0"
+    [_term_bright_black]="40/40/40"
+    [_term_bright_red]="ff/40/90"
+    [_term_bright_green]="6d/ff/59"
+    [_term_bright_yellow]="ff/ff/73"
+    [_term_bright_blue]="66/f0/ff"
+    [_term_bright_magenta]="ff/66/ff"
+    [_term_bright_cyan]="66/ff/d4"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Blues
+# -------------------------------------
+declare -A blues=(
+    [_term_black]="0d/1b/2a"
+    [_term_red]="1b/4f/72"
+    [_term_green]="1e/6c/a7"
+    [_term_yellow]="28/7b/bd"
+    [_term_blue]="31/8c/c7"
+    [_term_magenta]="4d/a8/e0"
+    [_term_cyan]="74/c0/e3"
+    [_term_white]="c0/e6/ff"
+    [_term_bright_black]="14/28/3b"
+    [_term_bright_red]="2a/6d/9e"
+    [_term_bright_green]="3a/8f/c8"
+    [_term_bright_yellow]="4b/a6/d8"
+    [_term_bright_blue]="63/bb/e6"
+    [_term_bright_magenta]="8f/d1/ff"
+    [_term_bright_cyan]="a3/e6/ff"
+    [_term_bright_white]="e6/f7/ff"
+)
+
+# -------------------------------------
+# Reds
+# -------------------------------------
+declare -A reds=(
+    [_term_black]="20/00/00"
+    [_term_red]="cc/00/00"
+    [_term_green]="ff/44/44"
+    [_term_yellow]="ff/88/88"
+    [_term_blue]="99/00/00"
+    [_term_magenta]="ff/00/44"
+    [_term_cyan]="ff/66/66"
+    [_term_white]="ff/e5/e5"
+    [_term_bright_black]="66/00/00"
+    [_term_bright_red]="ff/22/22"
+    [_term_bright_green]="ff/66/66"
+    [_term_bright_yellow]="ff/99/99"
+    [_term_bright_blue]="cc/22/22"
+    [_term_bright_magenta]="ff/44/88"
+    [_term_bright_cyan]="ff/77/77"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Greys
+# -------------------------------------
+declare -A greys=(
+    [_term_black]="10/10/10"
+    [_term_red]="30/30/30"
+    [_term_green]="50/50/50"
+    [_term_yellow]="70/70/70"
+    [_term_blue]="90/90/90"
+    [_term_magenta]="b0/b0/b0"
+    [_term_cyan]="d0/d0/d0"
+    [_term_white]="f0/f0/f0"
+    [_term_bright_black]="30/30/30"
+    [_term_bright_red]="50/50/50"
+    [_term_bright_green]="70/70/70"
+    [_term_bright_yellow]="90/90/90"
+    [_term_bright_blue]="b0/b0/b0"
+    [_term_bright_magenta]="d0/d0/d0"
+    [_term_bright_cyan]="f0/f0/f0"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Sepia
+# -------------------------------------
+declare -A sepia=(
+    [_term_black]="2e/26/1f"
+    [_term_red]="5e/45/2f"
+    [_term_green]="8c/6c/46"
+    [_term_yellow]="b8/98/6a"
+    [_term_blue]="a6/8b/7c"
+    [_term_magenta]="d2/b4/8c"
+    [_term_cyan]="e0/d2/c1"
+    [_term_white]="f5/ef/e6"
+    [_term_bright_black]="3e/35/2d"
+    [_term_bright_red]="7e/5a/40"
+    [_term_bright_green]="ae/8b/64"
+    [_term_bright_yellow]="ce/b5/91"
+    [_term_bright_blue]="c6/b0/9f"
+    [_term_bright_magenta]="e8/d0/b3"
+    [_term_bright_cyan]="f2/eb/e1"
+    [_term_bright_white]="ff/fc/f7"
+)
+
+# -------------------------------------
+# Pastels
+# -------------------------------------
+declare -A pastels=(
+    [_term_black]="ff/ff/ff"
+    [_term_red]="ff/b3/ba"
+    [_term_green]="b8/e9/bc"
+    [_term_yellow]="ff/ec/b5"
+    [_term_blue]="b5/d8/ff"
+    [_term_magenta]="e7/c6/ff"
+    [_term_cyan]="c8/ff/f0"
+    [_term_white]="99/99/99"
+    [_term_bright_black]="ee/ee/ee"
+    [_term_bright_red]="ff/cc/d0"
+    [_term_bright_green]="d0/f7/d2"
+    [_term_bright_yellow]="ff/f5/d9"
+    [_term_bright_blue]="d3/e8/ff"
+    [_term_bright_magenta]="f2/e1/ff"
+    [_term_bright_cyan]="dd/ff/f6"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Cyberpunk
+# -------------------------------------
+declare -A cyberpunk=(
+    [_term_black]="05/00/10"
+    [_term_red]="ff/00/82"
+    [_term_green]="00/ff/9d"
+    [_term_yellow]="ff/f1/00"
+    [_term_blue]="52/00/ff"
+    [_term_magenta]="ff/00/ff"
+    [_term_cyan]="00/f6/ff"
+    [_term_white]="f1/e7/ff"
+    [_term_bright_black]="35/00/40"
+    [_term_bright_red]="ff/33/99"
+    [_term_bright_green]="33/ff/b8"
+    [_term_bright_yellow]="ff/f6/66"
+    [_term_bright_blue]="83/33/ff"
+    [_term_bright_magenta]="ff/33/ff"
+    [_term_bright_cyan]="33/ff/ff"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Dark
+# -------------------------------------
+declare -A dark=(
+    [_term_black]="0d/0d/0d"
+    [_term_red]="aa/00/00"
+    [_term_green]="00/aa/00"
+    [_term_yellow]="aa/55/00"
+    [_term_blue]="00/55/aa"
+    [_term_magenta]="aa/00/aa"
+    [_term_cyan]="00/aa/aa"
+    [_term_white]="aa/aa/aa"
+    [_term_bright_black]="55/55/55"
+    [_term_bright_red]="ff/55/55"
+    [_term_bright_green]="55/ff/55"
+    [_term_bright_yellow]="ff/ff/55"
+    [_term_bright_blue]="55/55/ff"
+    [_term_bright_magenta]="ff/55/ff"
+    [_term_bright_cyan]="55/ff/ff"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Greens
+# -------------------------------------
+declare -A greens=(
+    [_term_black]="05/10/05"
+    [_term_red]="33/55/33"
+    [_term_green]="55/aa/55"
+    [_term_yellow]="88/cc/88"
+    [_term_blue]="22/44/22"
+    [_term_magenta]="44/66/44"
+    [_term_cyan]="66/aa/66"
+    [_term_white]="dd/ff/dd"
+    [_term_bright_black]="22/33/22"
+    [_term_bright_red]="55/77/55"
+    [_term_bright_green]="77/cc/77"
+    [_term_bright_yellow]="aa/ee/aa"
+    [_term_bright_blue]="44/66/44"
+    [_term_bright_magenta]="66/88/66"
+    [_term_bright_cyan]="88/cc/88"
+    [_term_bright_white]="ff/ff/ff"
+)
+
+# -------------------------------------
+# Earthy
+# -------------------------------------
+declare -A earthy=(
+    [_term_black]="2b/24/1c"
+    [_term_red]="8c/49/2f"
+    [_term_green]="7a/8f/3e"
+    [_term_yellow]="c4/9e/4d"
+    [_term_blue]="4d/5a/3a"
+    [_term_magenta]="9c/6f/5f"
+    [_term_cyan]="76/87/68"
+    [_term_white]="e8/e2/d9"
+    [_term_bright_black]="3d/34/29"
+    [_term_bright_red]="b3/63/42"
+    [_term_bright_green]="9e/b6/6b"
+    [_term_bright_yellow]="de/bc/7b"
+    [_term_bright_blue]="6e/7b/55"
+    [_term_bright_magenta]="b8/90/79"
+    [_term_bright_cyan]="98/a9/85"
+    [_term_bright_white]="ff/f9/ef"
+)
+
+# ---------------------------------------------------------
+# END OF PALETTES
+# ---------------------------------------------------------
+
+# ---------------------------------------------------------
+# Bash completion for select-color-palette()
+# ---------------------------------------------------------
+_select_color_palette_completion() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local colors_file="${BASH_SOURCE[0]}"
+    local palettes=()
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^declare[[:space:]]+-A[[:space:]]+([a-zA-Z0-9_]+)= ]]; then
+            palettes+=("${BASH_REMATCH[1]}")
+        fi
+    done < "$colors_file"
+
+    COMPREPLY=( $(compgen -W "${palettes[*]}" -- "$cur") )
+}
+
+# Register completion for the function
+complete -F _select_color_palette_completion select-color-palette
+
+# --------------------------------------------
+# Command completion for set-terminal-colors()
+# --------------------------------------------
+_set_terminal_colors_completion() {
+    local cur="${COMP_WORDS[COMP_CWORD]}"
+    local colors_file="${BASH_SOURCE[0]}"
+    local palettes=()
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^declare[[:space:]]+-A[[:space:]]+([a-zA-Z0-9_]+)= ]]; then
+            palettes+=("${BASH_REMATCH[1]}")
+        fi
+    done < "$colors_file"
+
+    COMPREPLY=( $(compgen -W "${palettes[*]}" -- "$cur") )
+}
+
+# Attach the completion function to set-terminal-colors
+complete -F _set_terminal_colors_completion set-terminal-colors
