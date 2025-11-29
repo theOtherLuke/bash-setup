@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# shebang is only present for nano to load proper syntax highlighting
+
+# -------------------------------
+#  Unique 2-Line Bash Prompt
+#  Minimalist + subtle separators
+#  ANSI escape codes for colors
+#  Debian 12/13 + macOS 26 compatible
+#  Indentation: 4 spaces
+# -------------------------------
+
+# -------------------------------
+# Source the config if present
+# -------------------------------
+if [[ -f "$HOME/.bash_prompt.conf" ]]; then
+    source "$HOME/.bash_prompt.conf"
+
+    # Create a nameref to the selected palette
+    declare -n palette_ref="$selected_palette"
+
+    # Assign variables from selected palette, falling back to defaults
+    variables=( _good_symbol
+                _warn_symbol
+                _separator_symbol
+    )
+
+    for var in "${variables[@]}"; do
+        declare -n target="$var"
+        target="${palette_ref[$var]:-${_default_palette[$var]}}"
+    done
+    _defaults_used=""
+
+# -------------------------------
+#  Handle missing config file
+# -------------------------------
+else
+    # -------------------------------
+    #  Symbols
+    # -------------------------------
+    _warn_symbol="⛔"
+    _good_symbol="✅"
+    _separator_symbol="·"
+    _defaults_used="\e[0;5;34m·"
+
+    # -------------------------------
+    #  Directory Importance Map
+    # -------------------------------
+    declare -A _dir_levels=(
+        ["/bin"]="warning"
+        ["/sbin"]="warning"
+        ["$HOME/.config"]="caution"
+        ["/etc"]="caution"
+        ["/usr/local/bin"]="safe"
+    )
+fi
+
+# -------------------------------
+#  Color Variables (ANSI escape codes)
+# -------------------------------
+_color_user="\e[1;34m"        # bright blue
+_color_host="\e[1;36m"        # bright cyan
+_color_at="\e[1;37m"          # white
+_color_separator="\e[0;37m"   # subtle gray
+_color_directory_default="\e[0;37m"
+_color_warning="\e[1;31m"     # bright red
+_color_caution="\e[1;33m"     # bright yellow
+_color_safe="\e[1;32m"        # bright green
+_color_reset="\e[0m"
+
+# -------------------------------
+#  Function: Get color for current directory
+# -------------------------------
+prompt-get-color-for-directory() {
+    local dir="$PWD"
+    for pattern in "${!_dir_levels[@]}"; do
+        if [[ "$dir" == "$pattern"* ]]; then
+            local level="${_dir_levels[$pattern]}"
+            case "$level" in
+                warning) echo -ne "$_color_warning" ;;
+                caution) echo -ne "$_color_caution" ;;
+                safe)    echo -ne "$_color_safe" ;;
+                *)       echo -ne "$_color_directory_default" ;;
+            esac
+            return
+        fi
+    done
+    echo -ne "$_color_directory_default"
+}
+
+# -------------------------------
+#  Function: Formatted directory
+# -------------------------------
+prompt-directory() {
+    local dir_color
+    dir_color=$(prompt-get-color-for-directory)
+    echo -ne "${dir_color}${PWD}${_color_reset}"
+}
+
+# -------------------------------
+#  Function: Exit code formatted
+# -------------------------------
+prompt-exit-code() {
+    local exit_code=$1
+    local code_color
+    if (( $exit_code == 0 )); then
+        code_color="$_color_safe"
+        stat_symbol="$_good_symbol"
+#        status="gravy" # per condition
+    else
+        code_color="$_color_warning"
+        stat_symbol="$_warn_symbol"
+#        status="${stat_symbol} $(printf "%03d" "$exit_code")" # per condition
+    fi
+    status="${stat_symbol} $(printf "%03d" "$exit_code")" # global
+    # Zero-padded to 3 digits
+#    printf "%b[ %s %03d ]%b" "$code_color" "$stat_symbol" "$exit_code" "$_color_reset"
+    printf "%b[ %s ]%b" "$code_color" "$status" "$_color_reset"
+}
+
+# -------------------------------
+#  Function: Formatted username@host
+# -------------------------------
+prompt-userhost() {
+    echo -ne "${_color_user}${USER}${_color_reset}${_color_at}@${_color_reset}${_color_host}$(hostname -s)${_color_reset}"
+}
+
+# -------------------------------
+#  Function: Assemble PS1
+# -------------------------------
+set-ps1() {
+    local status=$?
+    # Line 1: full PWD
+    local line1="$_defaults_used $(prompt-directory) ${_color_separator}${_separator_symbol}${_color_reset} $(prompt-exit-code $status) ${_color_reset}"
+
+    # Line 2: username@host · [ exit_code ] · ⛔ $ >
+    local line2
+    line2="$(prompt-userhost) \$ >"
+#    line2="$(prompt-userhost) ${_color_separator}${_separator_symbol}${_color_reset} $(prompt-exit-code $status) ${_color_separator}${_separator_symbol}${_color_reset} ${_warn_symbol} \$ >"
+
+    # Assign PS1 with newline
+    PS1="${line1}\n${line2} "
+}
+
+# -------------------------------
+#  Activate prompt
+# -------------------------------
+PROMPT_COMMAND=set-ps1
