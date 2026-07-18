@@ -1,0 +1,85 @@
+##############################################################################
+# ~/.nanorc — User Configuration for GNU nano 8.4
+# Reference: nanorc(5) — https://www.nano-editor.org/dist/latest/nanorc.5.html
+##############################################################################
+
+## ===========================================================================
+## INDENTATION / FORMATTING
+## ===========================================================================
+set tabsize 4          # Width of a literal tab character
+set tabstospaces       # Convert typed tabs into spaces
+set autoindent         # Auto-indent new lines
+# set breaklonglines    # Hard-wrap overlong lines (optional)
+# set fill 80           # Column to wrap/justify at (optional)
+
+## ===========================================================================
+## DISPLAY & EDITOR UI
+## ===========================================================================
+set linenumbers        # Show line numbers
+set softwrap           # Visually wrap long lines without inserting newlines
+set atblanks           # When softwrapping, break at whitespace
+set indicator          # Show scrollbar-like position indicator
+set constantshow       # Always show cursor position in status bar
+set showcursor         # Show cursor in file browser / help view
+set smarthome          # Home key toggles indentation / line start
+set afterends          # Ctrl+Right stops at word ends
+set stateflags         # Show state flags (I,M,L,R,S) in title bar
+set minibar            # Use mini-bar status line instead of full help
+set minicolor brightred,grey # minibar color
+set titlecolor brightwhite,blue # Title bar colors
+set multibuffer        # Allow multiple buffers/files open
+set zap                # Allow delete/backspace to remove seoected region
+
+## ===========================================================================
+## MOUSE & INPUT
+## ===========================================================================
+set mouse              # Enable mouse (cursor move, select, scroll)
+# set preserve           # Preserve XON/XOFF (^Q/^S) keys
+# set rebinddelete       # Fix Backspace/Delete confusion if needed
+# set rawsequences       # Handle numeric keypad / escape sequence issues
+
+## ===========================================================================
+## SEARCH / REPLACE
+## ===========================================================================
+set casesensitive      # Searches are case-sensitive by default
+set historylog         # Save search/replace history across sessions
+set positionlog        # Save cursor/anchor positions
+
+## ===========================================================================
+## FILE HANDLING / SAVE
+## ===========================================================================
+set unix               # Save files in Unix format by default
+# set noconvert        # Don't auto-convert DOS/Mac line endings
+# set nonewlines       # Don't auto-add newline at EOF
+# set backup           # Save backup files (~)
+# set backupdir "~/.local/share/nano/backup"  # Backup directory
+set trimblanks       # Trim trailing whitespace
+# set bookstyle        # Leading whitespace means new paragraph
+
+## ===========================================================================
+## SYNTAX HIGHLIGHTING
+## ===========================================================================
+include /usr/share/nano/*.nanorc       # System-wide syntax rules
+# include ~/.nano/bash.nanorc            # Custom bash syntax rules
+
+## ===========================================================================
+## CUSTOM MACROS / KEYBINDINGS
+## ===========================================================================
+
+# Comment/uncomment current or marked lines (Alt+K)
+bind M-K comment main
+
+# Insert Bash shebang (Alt+B) — literal text insertion
+bind M-B "#!/usr/bin/env bash" main
+
+# Insert Python 3 shebang (Alt+P) — literal text insertion
+bind M-P "#!/usr/bin/env python3" main
+
+# Notes on macros:
+# - String macros insert literal characters only (no cursor movement).
+# - For newlines, press Enter after insertion or record an interactive macro (M-: ... M-:)
+# - Interactive macros can then be repeated with M-; across multiple lines.
+
+##############################################################################
+# End of configuration
+##############################################################################
